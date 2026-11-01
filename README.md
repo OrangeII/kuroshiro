@@ -95,15 +95,20 @@ Instantiate:
 var kuroshiro = new Kuroshiro();
 ```
 
+Copy the dictionary files from `node_modules/kuromoji/dict/` to a public directory such as `public/dict/`. Set `dictPath` to their URL (`/dict/` in this example); see the [browser dictionary guide](https://github.com/hexenq/kuroshiro-analyzer-kuromoji#browser-dictionary-setup).
+
 Initialize kuroshiro with an instance of analyzer, then convert what you want:
 ```js
-kuroshiro.init(new KuromojiAnalyzer({ dictPath: "url/to/dictFiles" }))
+kuroshiro.init(new KuromojiAnalyzer({ dictPath: "/dict/" }))
     .then(function () {
         return kuroshiro.convert("感じ取れたら手を繋ごう、重なるのは人生のライン and レミリア最高！", { to: "hiragana" });
     })
     .then(function(result){
         console.log(result);
     })
+    .catch(function (error) {
+        console.error(error);
+    });
 ```
 
 ### TypeScript
@@ -253,14 +258,20 @@ kuroshiro supports three kinds of romanization systems.
 There is a useful [webpage](http://jgrammar.life.coocan.jp/ja/data/rohmaji2.htm) for you to check the difference between these romanization systems.
 
 ### Notice for Romaji Conversion
-Since it's impossible to fully automatically convert __furigana__ directly to __romaji__ because furigana lacks information on pronunciation (Refer to [なぜ フリガナでは ダメなのか？](https://green.adam.ne.jp/roomazi/onamae.html#naze)). 
 
-kuroshiro will not handle chōon when processing directly furigana (kana) -> romaji conversion with every romanization system (Except that Chōonpu will be handled) 
+#### Long vowels
 
-*For example, you'll get "kousi", "koushi", "koushi", "koushi" respectively when converts kana "こうし" to romaji 
-using `nippon`, `passport`, `hepburn`, `jis` romanization system.*
+Furigana (kana spelling) does not always provide enough pronunciation information to distinguish long vowels, so converting it directly to romaji cannot reliably reproduce pronunciation. See [なぜ フリガナでは ダメなのか？](https://green.adam.ne.jp/roomazi/onamae.html#naze) for more background.
 
-The kanji -> romaji conversion with/without furigana mode is __unaffected__ by this logic.
+For this reason, `kanaToRomaji()` does not infer long vowels from kana spelling in any of the three romanization systems. The long vowel mark `ー` (chōonpu) is still handled according to the selected system.
+
+For example, converting `こうし` with `kanaToRomaji()` produces `kousi`, `koushi`, and `koushi` in `nippon`, `passport`, and `hepburn`, respectively.
+
+This limitation of direct kana conversion does not prevent `convert()` from handling long vowels: it uses pronunciation information from the analyzer when available, including when converting kanji with or without annotations. The result therefore depends on the pronunciation information provided by the analyzer.
+
+#### Sokuon (`っ/ッ`)
+
+When no following consonant can be doubled, all three systems use `'`, e.g. `っい` → `'i`, `あっ` → `a'`. This is kuroshiro's convention, not an extra spoken syllable.
 
 ## Contributing
 Please check [CONTRIBUTING](CONTRIBUTING.md).

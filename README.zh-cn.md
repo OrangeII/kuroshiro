@@ -91,15 +91,20 @@ const result = await kuroshiro.convert("感じ取れたら手を繋ごう、重�
 var kuroshiro = new Kuroshiro();
 ```
 
+将 `node_modules/kuromoji/dict/` 中的字典文件复制到 `public/dict/` 等公开目录，`dictPath` 填写对应的访问路径（本例为 `/dict/`）。详见[浏览器字典部署说明](https://github.com/hexenq/kuroshiro-analyzer-kuromoji#browser-dictionary-setup)。
+
 使用一个解析器实例来初始化kuroshiro，然后进行转换操作:
 ```js
-kuroshiro.init(new KuromojiAnalyzer({ dictPath: "url/to/dictFiles" }))
+kuroshiro.init(new KuromojiAnalyzer({ dictPath: "/dict/" }))
     .then(function () {
         return kuroshiro.convert("感じ取れたら手を繋ごう、重なるのは人生のライン and レミリア最高！", { to: "hiragana" });
     })
     .then(function(result){
         console.log(result);
     })
+    .catch(function (error) {
+        console.error(error);
+    });
 ```
 
 ## API说明
@@ -224,13 +229,20 @@ kuroshiro支持三种罗马字体系。
 想快速了解这些罗马字体系的不同，可参考这个实用的[网页](http://jgrammar.life.coocan.jp/ja/data/rohmaji2.htm)。
 
 ### 罗马字转换须知
-完全自动化进行注音假名到罗马字的直接转换是不可能的，这是因为一般的注音假名都缺乏正确的发音信息，可以参考 [なぜ フリガナでは ダメなのか？](https://green.adam.ne.jp/roomazi/onamae.html#naze)。
 
-因此kuroshiro在进行直接的注音假名->罗马字转换（使用任何罗马字体系）时，不会处理长音。(但长音符会被处理)
+#### 长音
 
-*例如，当进行假名"こうし"到罗马字的转换时，对于`nippon`, `passport`, `hepburn`三种罗马字体系，你会分别得到"kousi", "koushi", "koushi"这几个结果*
+注音假名并不总能提供区分长音所需的发音信息，因此仅根据假名拼写直接转换为罗马字，无法可靠地还原实际发音。具体原因可以参考 [なぜ フリガナでは ダメなのか？](https://green.adam.ne.jp/roomazi/onamae.html#naze)。
 
-汉字->罗马字的转换无论使用注音假名模式与否都 __不受__ 此逻辑影响。
+因此，`kanaToRomaji()` 在三种罗马字体系下都不会根据假名拼写推断长音，但长音符 `ー` 仍会按所选体系处理。
+
+例如，使用 `kanaToRomaji()` 转换 `こうし` 时，`nippon`、`passport`、`hepburn` 三种体系分别得到 `kousi`、`koushi`、`koushi`。
+
+这一直接转换假名的限制，不妨碍 `convert()` 处理长音：它会利用解析器提供的发音信息（如果有），汉字转换为罗马字时，无论是否使用注音模式也是如此。因此，转换结果仍取决于解析器提供的发音信息。
+
+#### 促音（`っ/ッ`）
+
+不能重复后续辅音时，三种体系都用 `'` 表示，例如 `っい` → `'i`、`あっ` → `a'`。这是 kuroshiro 的约定，不表示额外的发音音节。
 
 ## 贡献
 请查阅文档 [CONTRIBUTING](CONTRIBUTING.md).

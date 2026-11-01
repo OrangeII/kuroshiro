@@ -157,16 +157,9 @@ const toRawKatakana = function (str) {
     }).join("");
 };
 
-/**
- * Convert kana to romaji
- *
- * @param {string} str Given string
- * @param {string} system To which romanization system the given string is converted
- * @return {string} Romaji string
- */
-const toRawRomaji = function (str, system) {
-    system = system || ROMANIZATION_SYSTEM.HEPBURN;
-
+// Keep the existing tables together so conversion and annotation grouping
+// recognize the same combinations, without maintaining another kana list.
+const createRomajiTables = function () {
     const romajiSystem = {
         nippon: {
             // 数字と記号
@@ -1758,7 +1751,28 @@ const toRawRomaji = function (str, system) {
         }
     };
 
-    const reg_tsu = /(っ|ッ)([bcdfghijklmnopqrstuvwyz])/gm;
+    return romajiSystem;
+};
+
+const ROMAJI_TABLES = createRomajiTables();
+
+const isKanaCombination = function (str) {
+    return str.length === 2 && [...str].every(isKana)
+        && Object.keys(ROMAJI_TABLES).some(system => Object.prototype.hasOwnProperty.call(ROMAJI_TABLES[system], str));
+};
+
+/**
+ * Convert kana to romaji
+ *
+ * @param {string} str Given string
+ * @param {string} system To which romanization system the given string is converted
+ * @return {string} Romaji string
+ */
+const toRawRomaji = function (str, system) {
+    system = system || ROMANIZATION_SYSTEM.HEPBURN;
+    const romajiSystem = ROMAJI_TABLES;
+    // A sokuon doubles a following consonant, never a vowel.
+    const reg_tsu = /(っ|ッ)([bcdfghjklmnpqrstvwyz])/gm;
     const reg_xtsu = /っ|ッ/gm;
 
     let pnt = 0;
@@ -1818,7 +1832,8 @@ const toRawRomaji = function (str, system) {
         result = result.replace(/cc/gm, "tc");
     }
 
-    result = result.replace(reg_xtsu, "tsu");
+    // Library convention: mark an unmatched sokuon without inventing a tsu syllable.
+    result = result.replace(reg_xtsu, "'");
 
     // [PASSPORT] 撥音の特殊表記 b、m、p
     if (system === ROMANIZATION_SYSTEM.PASSPORT) {
@@ -1991,6 +2006,7 @@ export {
     toRawHiragana,
     toRawKatakana,
     toRawRomaji,
+    isKanaCombination,
     kanaToHiragana,
     kanaToKatakana,
     kanaToRomaji
